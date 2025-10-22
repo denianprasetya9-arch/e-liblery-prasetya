@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Library Modern</title>
+    <!-- Menggunakan Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .page {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+        .page.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+            position: absolute;
+        }
+        .book-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .book-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .form-container {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        #background-container {
+            position: fixed;
+            inset: 0;
+            z-index: -20;
+            transition: background-image 1s ease-in-out;
+            background-size: cover;
+            background-position: center;
+        }
+        #background-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.3);
+            z-index: -10;
+        }
+        .theme-galaxy {
+            background-image: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2671&auto=format&fit=crop');
+        }
+        .theme-nature {
+            background-image: url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2560&auto=format&fit=crop');
+        }
+        /* Kustomisasi scrollbar untuk konten buku */
+        #read-book-content::-webkit-scrollbar, #user-list::-webkit-scrollbar, #approval-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        #read-book-content::-webkit-scrollbar-track, #user-list::-webkit-scrollbar-track, #approval-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        #read-book-content::-webkit-scrollbar-thumb, #user-list::-webkit-scrollbar-thumb, #approval-list::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        #read-book-content::-webkit-scrollbar-thumb:hover, #user-list::-webkit-scrollbar-thumb:hover, #approval-list::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Style untuk tombol yang dinonaktifkan */
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-transparent text-gray-800">
+
+    <div id="background-container"></div>
+
+    <!-- Indikator Loading Awal -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-[101] p-4">
+        <div class="text-center">
+            <svg class="animate-spin h-10 w-10 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p class="mt-2 text-lg font-semibold text-gray-700">Menghubungkan ke server...</p>
+        </div>
+    </div>
+
+    <div id="app" class="min-h-screen flex items-center justify-center p-4 opacity-0 transition-opacity duration-500">
+
+        <!-- 1. Halaman Login -->
+        <div id="login-page" class="page w-full max-w-md">
+            <div class="bg-white/70 form-container shadow-2xl rounded-2xl p-8">
+                 <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-indigo-100 mb-6">
+                   <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                   </svg>
+              </div>
+                 <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Selamat Datang</h1>
+                 <p class="text-center text-gray-600 mb-6">Login ke akun E-Library Anda.</p>
+                 <div id="login-error-message" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-4" role="alert"></div>
+                 <div id="login-success-message" class="hidden bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md mb-4" role="alert"></div>
+                 <form id="login-form">
+                     <div class="mb-4">
+                         <label for="username" class="block text-gray-700 text-sm font-bold mb-2">Username</label>
+                         <input type="text" id="username" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Masukkan username" required>
+                     </div>
+                     <div class="mb-6">
+                         <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                         <input type="password" id="password" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="****" required>
+                     </div>
+                     <button id="login-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg w-full focus:outline-none focus:shadow-outline transition-transform transform hover:scale-105" type="submit">Login</button>
+                 </form>
+                 <div class="mt-6 text-center">
+                     <p class="text-sm text-gray-600">Belum punya akun? <a href="#" id="show-register-link" class="font-medium text-indigo-600 hover:text-indigo-500">Daftar di sini</a></p>
+                 </div>
+            </div>
+        </div>
+
+        <!-- 2. Halaman Registrasi -->
+        <div id="register-page" class="page hidden w-full max-w-md">
+              <div class="bg-white/70 form-container shadow-2xl rounded-2xl p-8">
+                 <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Buat Akun Baru</h1>
+                 <p class="text-center text-gray-600 mb-6">Pendaftaran memerlukan persetujuan admin.</p>
+                 <form id="register-form">
+                     <div class="mb-4">
+                         <label for="reg-username" class="block text-gray-700 text-sm font-bold mb-2">Username</label>
+                         <input type="text" id="reg-username" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                     </div>
+                     <div class="mb-6">
+                         <label for="reg-password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                         <input type="password" id="reg-password" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                     </div>
+                     <button id="register-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg w-full focus:outline-none focus:shadow-outline transition-transform transform hover:scale-105" type="submit">Daftar</button>
+                 </form>
+                 <div class="mt-6 text-center">
+                     <p class="text-sm text-gray-600">Sudah punya akun? <a href="#" id="show-login-link" class="font-medium text-indigo-600 hover:text-indigo-500">Login di sini</a></p>
+                 </div>
+            </div>
+        </div>
+
+        <!-- 3. Halaman Library -->
+        <div id="library-page" class="page hidden w-full max-w-7xl mx-auto">
+            <header class="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-4 mb-8 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">E-Library</h1>
+                    <p id="welcome-message" class="text-gray-600"></p>
+                </div>
+                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-transform transform hover:scale-105">Logout</button>
+            </header>
+
+            <div id="admin-panel" class="hidden space-y-8">
+                <div class="bg-white shadow-lg rounded-xl p-6">
+                    <h2 class="text-xl font-bold mb-4 text-gray-700">Panel Admin: Tambah Buku</h2>
+                    <form id="add-book-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                          <div class="lg:col-span-1">
+                              <label for="new-book-title" class="block text-sm font-medium text-gray-700">Judul Buku</label>
+                              <input type="text" id="new-book-title" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                          </div>
+                         <div class="lg:col-span-1">
+                              <label for="new-book-author" class="block text-sm font-medium text-gray-700">Penulis</label>
+                              <input type="text" id="new-book-author" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                          </div>
+                          <div class="lg:col-span-1">
+                              <label for="new-book-cover-url" class="block text-sm font-medium text-gray-700">URL Cover</label>
+                              <input type="url" id="new-book-cover-url" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://...">
+                          </div>
+                         <div class="lg:col-span-1">
+                            <label for="new-book-cover-file" class="block text-sm font-medium text-gray-700">atau Unggah Cover</label>
+                            <input type="file" id="new-book-cover-file" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" accept="image/*">
+                        </div>
+                         <div class="lg:col-span-1">
+                             <button id="add-book-btn" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">Tambah Buku</button>
+                         </div>
+                    </form>
+                </div>
+                <!-- Panel lainnya -->
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="md:col-span-1 bg-white shadow-lg rounded-xl p-6">
+                        <h2 class="text-xl font-bold mb-4 text-gray-700">Pengaturan Tema</h2>
+                        <div id="theme-selector" class="flex items-center space-x-4 flex-wrap">
+                            <label><input type="radio" name="theme" value="galaxy" class="mr-1"> Galaksi</label>
+                            <label><input type="radio" name="theme" value="nature" class="mr-1"> Alam</label>
+                        </div>
+                    </div>
+                    <div id="approval-panel" class="md:col-span-2 bg-white shadow-lg rounded-xl p-6">
+                        <h2 class="text-xl font-bold mb-4 text-gray-700">Persetujuan Anggota</h2>
+                        <div id="approval-list" class="space-y-3 max-h-40 overflow-y-auto"></div>
+                    </div>
+                </div>
+                 <div id="user-management-panel" class="bg-white shadow-lg rounded-xl p-6">
+                     <h2 class="text-xl font-bold mb-4 text-gray-700">Manajemen Pengguna</h2>
+                     <div id="user-list" class="space-y-3 max-h-60 overflow-y-auto"></div>
+                 </div>
+            </div>
+
+            <main class="mt-8">
+                <h2 class="text-3xl font-bold mb-6 text-white">Koleksi Buku</h2>
+                <div id="book-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"></div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Modal Edit Buku -->
+    <div id="edit-book-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg max-h-screen overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">Edit Buku</h2>
+            <form id="edit-book-form">
+                <input type="hidden" id="edit-book-id">
+                <div class="mb-4">
+                    <label for="edit-book-title" class="block text-sm font-medium text-gray-700">Judul Buku</label>
+                    <input type="text" id="edit-book-title" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                </div>
+                <div class="mb-4">
+                    <label for="edit-book-author" class="block text-sm font-medium text-gray-700">Penulis</label>
+                    <input type="text" id="edit-book-author" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                </div>
+                <div class="mb-4">
+                    <label for="edit-book-cover-url" class="block text-sm font-medium text-gray-700">URL Cover Baru</label>
+                    <input type="url" id="edit-book-cover-url" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Kosongkan jika tidak ganti">
+                </div>
+                <div class="mb-4">
+                    <label for="edit-book-cover-file" class="block text-sm font-medium text-gray-700">atau Unggah Cover Baru</label>
+                    <input type="file" id="edit-book-cover-file" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" accept="image/*">
+                </div>
+                 <div class="mb-6">
+                    <label for="edit-book-content" class="block text-sm font-medium text-gray-700">Isi Konten Buku</label>
+                    <textarea id="edit-book-content" rows="10" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Tulis atau tempelkan isi buku di sini..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancel-edit-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Batal</button>
+                    <button type="submit" id="save-edit-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Baca Buku -->
+    <div id="read-book-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl flex flex-col" style="height: 90vh;">
+            <div class="p-6 border-b flex justify-between items-center">
+                 <h2 id="read-book-title" class="text-2xl font-bold text-gray-800">Judul Buku</h2>
+                 <button id="close-read-btn" class="text-gray-500 hover:text-gray-800">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                 </button>
+            </div>
+            <div id="read-book-content" class="p-6 flex-grow overflow-y-auto whitespace-pre-wrap">
+                Konten buku akan muncul di sini...
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Notifikasi -->
+    <div id="notification-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm text-center">
+            <h3 id="notification-title" class="text-xl font-bold mb-4 text-gray-800"></h3>
+            <p id="notification-message" class="text-gray-600 mb-6"></p>
+            <button id="notification-close-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg">Tutup</button>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi -->
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm text-center">
+            <h3 id="confirm-title" class="text-xl font-bold mb-4 text-gray-800">Konfirmasi</h3>
+            <p id="confirm-message" class="text-gray-600 mb-6">Apakah Anda yakin?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-cancel-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Batal</button>
+                <button id="confirm-ok-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Yakin</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Impor Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, onSnapshot, addDoc, setDoc, deleteDoc, updateDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- KONFIGURASI & VARIABEL GLOBAL ---
+        const MAIN_ADMIN = 'denian';
+
+        // --- ELEMEN DOM ---
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const appContainer = document.getElementById('app');
+        const backgroundContainer = document.getElementById('background-container');
+        // Pages
+        const loginPage = document.getElementById('login-page');
+        const registerPage = document.getElementById('register-page');
+        const libraryPage = document.getElementById('library-page');
+        // Forms & Links
+        const loginForm = document.getElementById('login-form');
+        const loginBtn = document.getElementById('login-btn');
+        const registerForm = document.getElementById('register-form');
+        const registerBtn = document.getElementById('register-btn');
+        const showRegisterLink = document.getElementById('show-register-link');
+        const showLoginLink = document.getElementById('show-login-link');
+        // Messages
+        const loginErrorMessage = document.getElementById('login-error-message');
+        const loginSuccessMessage = document.getElementById('login-success-message');
+        // Library Page
+        const logoutBtn = document.getElementById('logout-btn');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const bookList = document.getElementById('book-list');
+        // Admin Panel
+        const adminPanel = document.getElementById('admin-panel');
+        const addBookForm = document.getElementById('add-book-form');
+        const addBookBtn = document.getElementById('add-book-btn');
+        const approvalPanel = document.getElementById('approval-panel');
+        const approvalList = document.getElementById('approval-list');
+        const themeSelector = document.getElementById('theme-selector');
+        const userManagementPanel = document.getElementById('user-management-panel');
+        const userList = document.getElementById('user-list');
+        // Edit Modal
+        const editBookModal = document.getElementById('edit-book-modal');
+        const editBookForm = document.getElementById('edit-book-form');
+        const saveEditBtn = document.getElementById('save-edit-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const editBookIdInput = document.getElementById('edit-book-id');
+        const editBookTitleInput = document.getElementById('edit-book-title');
+        const editBookAuthorInput = document.getElementById('edit-book-author');
+        const editBookCoverUrlInput = document.getElementById('edit-book-cover-url');
+        const editBookCoverFileInput = document.getElementById('edit-book-cover-file');
+        const editBookContentInput = document.getElementById('edit-book-content');
+        // Read Modal
+        const readBookModal = document.getElementById('read-book-modal');
+        const readBookTitle = document.getElementById('read-book-title');
+        const readBookContent = document.getElementById('read-book-content');
+        const closeReadBtn = document.getElementById('close-read-btn');
+        // Notification Modal
+        const notificationModal = document.getElementById('notification-modal');
+        const notificationTitle = document.getElementById('notification-title');
+        const notificationMessage = document.getElementById('notification-message');
+        const notificationCloseBtn = document.getElementById('notification-close-btn');
+        // Confirmation Modal
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmTitle = document.getElementById('confirm-title');
+        const confirmMessage = document.getElementById('confirm-message');
+        const confirmOkBtn = document.getElementById('confirm-ok-btn');
+        const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+
+
+        // --- STATE LOKAL (disinkronkan dari Firebase) ---
+        let localUsers = {};
+        let localBooks = [];
+        let localPending = [];
+        let currentUser = null;
+        let db;
+        let resolveConfirmation;
+
+        // --- INISIALISASI ---
+        const initializeAppWithFirebase = async () => {
+            try {
+                // Konfigurasi Firebase dari variabel global
+                if (typeof __firebase_config === 'undefined' || __firebase_config === '{}') {
+                    throw new Error("Variabel konfigurasi Firebase (__firebase_config) tidak ditemukan atau kosong.");
+                }
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                const auth = getAuth(app);
+                
+                // Konfigurasi App ID dari variabel global
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+                // Autentikasi pengguna
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Melanjutkan inisialisasi aplikasi
+                await seedInitialData(appId);
+                setupRealtimeListeners(appId);
+
+                loadingOverlay.classList.add('hidden');
+                appContainer.classList.remove('opacity-0');
+                showPage('login-page');
+            } catch (error) {
+                console.error("Gagal menginisialisasi Firebase:", error);
+                loadingOverlay.innerHTML = `<div class="text-center p-4 bg-red-100 rounded-lg">
+                    <h3 class="text-lg font-bold text-red-700">Terjadi Kesalahan Konfigurasi</h3>
+                    <p class="text-red-600 mt-2">Tidak dapat memuat aplikasi. Pastikan aplikasi ini dijalankan di lingkungan yang benar dengan konfigurasi Firebase yang valid.</p>
+                    <p class="text-sm text-gray-500 mt-4">Detail: ${error.message}</p>
+                </div>`;
+            }
+        };
+        
+        const seedInitialData = async (appId) => {
+            const adminDocRef = doc(db, `artifacts/${appId}/public/data/users`, MAIN_ADMIN);
+            const adminDocSnap = await getDoc(adminDocRef);
+
+            if (!adminDocSnap.exists()) {
+                console.log("Database kosong, membuat data awal...");
+                const batch = writeBatch(db);
+                batch.set(adminDocRef, { password: 'prasetya', role: 'admin' });
+
+                const userDocRef = doc(db, `artifacts/${appId}/public/data/users`, 'user123');
+                batch.set(userDocRef, { password: 'user123', role: 'user' });
+
+                const defaultBooks = [
+                    { id: '1', title: "Laskar Pelangi", author: "Andrea Hirata", cover: "https://covers.openlibrary.org/b/id/8254261-L.jpg", borrowedBy: null, content: "Cerita Laskar Pelangi terjadi di desa Gantung, Belitung Timur..." },
+                    { id: '2', title: "Bumi Manusia", author: "Pramoedya Ananta Toer", cover: "https://covers.openlibrary.org/b/id/10294727-L.jpg", borrowedBy: null, content: "Ini adalah kisah Minke, seorang priyayi Jawa di akhir abad ke-19..." },
+                    { id: '7', title: "Atomic Habits", author: "James Clear", cover: "https://covers.openlibrary.org/b/id/12749970-L.jpg", borrowedBy: 'user123', content: "Perubahan kecil dapat menghasilkan hasil yang luar biasa. Inilah inti dari Atomic Habits." }
+                ];
+                
+                defaultBooks.forEach(book => {
+                    const bookDocRef = doc(db, `artifacts/${appId}/public/data/books`, book.id);
+                    batch.set(bookDocRef, { ...book });
+                });
+                
+                const themeDocRef = doc(db, `artifacts/${appId}/public/data/settings`, 'theme');
+                batch.set(themeDocRef, { name: 'galaxy' }); 
+
+                await batch.commit();
+                console.log("Data awal berhasil dibuat.");
+            }
+        };
+
+        const setupRealtimeListeners = (appId) => {
+            onSnapshot(collection(db, `artifacts/${appId}/public/data/books`), (snapshot) => {
+                localBooks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (currentUser) renderBooks();
+            });
+
+            onSnapshot(collection(db, `artifacts/${appId}/public/data/users`), (snapshot) => {
+                localUsers = {};
+                snapshot.docs.forEach(doc => { localUsers[doc.id] = { id: doc.id, ...doc.data() }; });
+                if (currentUser?.role === 'admin') renderUserList();
+            });
+
+            onSnapshot(collection(db, `artifacts/${appId}/public/data/pendingRegistrations`), (snapshot) => {
+                localPending = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (currentUser?.role === 'admin') renderApprovalList();
+            });
+            
+            onSnapshot(doc(db, `artifacts/${appId}/public/data/settings`, 'theme'), (doc) => {
+                const theme = doc.exists() ? doc.data().name : 'galaxy';
+                setTheme(theme);
+                const themeRadio = document.querySelector(`input[name="theme"][value="${theme}"]`);
+                if (themeRadio) themeRadio.checked = true;
+            });
+        };
+
+        const getAppId = () => typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // --- FUNGSI BANTU & TAMPILAN ---
+        const showNotification = (title, message, isError = false) => {
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            notificationTitle.classList.toggle('text-red-600', isError);
+            notificationTitle.classList.toggle('text-gray-800', !isError);
+            notificationModal.classList.remove('hidden');
+        };
+        
+        const showPage = (pageId) => {
+            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+            document.getElementById(pageId)?.classList.remove('hidden');
+        };
+        
+        const showConfirmation = (title, message) => {
+            confirmTitle.textContent = title;
+            confirmMessage.textContent = message;
+            confirmModal.classList.remove('hidden');
+
+            return new Promise((resolve) => {
+                resolveConfirmation = resolve;
+            });
+        };
+
+        const toggleButtonLoading = (button, isLoading) => {
+            if (!button) return;
+            if (isLoading) {
+                button.disabled = true;
+                if (!button.dataset.originalContent) {
+                    button.dataset.originalContent = button.innerHTML;
+                }
+                button.innerHTML = `<svg class="animate-spin h-5 w-5 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+            } else {
+                button.disabled = false;
+                if (button.dataset.originalContent) {
+                    button.innerHTML = button.dataset.originalContent;
+                }
+            }
+        };
+
+        const setTheme = (theme) => {
+            backgroundContainer.className = `theme-${theme}`;
+        };
+        
+        const fileToDataUrl = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        };
+
+        const renderBooks = () => {
+            bookList.innerHTML = '';
+            localBooks.sort((a,b) => a.title.localeCompare(b.title)).forEach(book => {
+                const isBorrowed = !!book.borrowedBy;
+                const isBorrowedByCurrentUser = currentUser && book.borrowedBy === currentUser.username;
+
+                const bookCard = document.createElement('div');
+                bookCard.className = `book-card bg-white shadow-lg rounded-xl overflow-hidden group flex flex-col justify-between`;
+                
+                let adminButtons = '', userActionButtons = '';
+                if (currentUser) {
+                    if (currentUser.role === 'admin') {
+                        adminButtons = `
+                            <button data-id="${book.id}" class="edit-btn absolute top-3 right-14 bg-blue-600 text-white rounded-full p-2 w-9 h-9 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none hover:bg-blue-700" title="Edit Buku">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                            </button>
+                            <button data-id="${book.id}" class="delete-btn absolute top-3 right-3 bg-red-600 text-white rounded-full p-2 w-9 h-9 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity focus:outline-none hover:bg-red-700" title="Hapus Buku">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                            </button>
+                        `;
+                    }
+
+                    if (isBorrowedByCurrentUser) {
+                        userActionButtons = `<button data-id="${book.id}" class="return-btn w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 transition-colors">Kembalikan</button>`;
+                    } else if (!isBorrowed) {
+                        userActionButtons = `<button data-id="${book.id}" class="borrow-btn w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 transition-colors">Pinjam</button>`;
+                    }
+                }
+
+                bookCard.innerHTML = `
+                    <div class="p-4 flex-grow">
+                        <div class="relative aspect-[2/3] mb-4">
+                            <img src="${book.cover || 'https://placehold.co/200x300/e2e8f0/334155?text=No+Cover'}" alt="${book.title}" class="w-full h-full object-cover rounded-md" onerror="this.onerror=null;this.src='https://placehold.co/200x300/e2e8f0/334155?text=Error';">
+                            ${adminButtons}
+                        </div>
+                        <h3 class="font-bold text-md leading-tight truncate">${book.title}</h3>
+                        <p class="text-sm text-gray-600">${book.author}</p>
+                    </div>
+                    <div class="p-4 pt-0">
+                         <button data-id="${book.id}" class="read-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg mb-2 transition-colors">Baca</button>
+                        ${userActionButtons || ''}
+                         ${isBorrowed && !isBorrowedByCurrentUser ? `<div class="text-center text-sm text-red-500 font-semibold mt-2">Dipinjam oleh ${book.borrowedBy}</div>` : ''}
+                    </div>
+                `;
+                bookList.appendChild(bookCard);
+            });
+        };
+        
+        const renderApprovalList = () => {
+            approvalList.innerHTML = '';
+            if (localPending.length === 0) {
+                 approvalList.innerHTML = '<p class="text-gray-500">Tidak ada pendaftaran yang menunggu persetujuan.</p>';
+                 return;
+            }
+            localPending.forEach(user => {
+                 const item = document.createElement('div');
+                 item.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
+                 item.innerHTML = `
+                     <span class="font-medium text-gray-700">${user.username}</span>
+                     <div>
+                         <button data-id="${user.id}" class="approve-btn bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-md mr-2">Setujui</button>
+                         <button data-id="${user.id}" class="reject-btn bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-md">Tolak</button>
+                     </div>
+                 `;
+                 approvalList.appendChild(item);
+            });
+        };
+        
+        const renderUserList = () => {
+            userList.innerHTML = '';
+            const users = Object.values(localUsers).sort((a,b) => a.id.localeCompare(b.id));
+
+            if (users.length === 0) {
+                 userList.innerHTML = '<p class="text-gray-500">Tidak ada pengguna terdaftar.</p>';
+                 return;
+            }
+
+            users.forEach(user => {
+                 const isMainAdmin = user.id === MAIN_ADMIN;
+                 const item = document.createElement('div');
+                 item.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
+                 
+                 const roleBadge = user.role === 'admin' 
+                    ? `<span class="bg-indigo-100 text-indigo-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">Admin</span>`
+                    : `<span class="bg-gray-100 text-gray-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">User</span>`;
+
+                 item.innerHTML = `
+                     <div>
+                        <span class="font-medium text-gray-700">${user.id}</span>
+                        ${roleBadge}
+                     </div>
+                     <div>
+                        ${!isMainAdmin ? `
+                            <button data-id="${user.id}" data-role="${user.role}" class="toggle-role-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-md mr-2">
+                                ${user.role === 'admin' ? 'Jadikan User' : 'Jadikan Admin'}
+                            </button>
+                            <button data-id="${user.id}" class="delete-user-btn bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-md">
+                                Hapus
+                            </button>
+                        ` : '<span class="text-sm font-semibold text-gray-500">Tidak dapat diubah</span>'}
+                     </div>
+                 `;
+                 userList.appendChild(item);
+            });
+        };
+
+
+        // --- LOGIKA APLIKASI ---
+
+        const handleLogin = (e) => {
+            e.preventDefault();
+            loginErrorMessage.classList.add('hidden');
+            loginSuccessMessage.classList.add('hidden');
+            toggleButtonLoading(loginBtn, true);
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                loginErrorMessage.textContent = "Username dan password tidak boleh kosong.";
+                loginErrorMessage.classList.remove('hidden');
+                toggleButtonLoading(loginBtn, false);
+                return;
+            }
+
+            const user = localUsers[username];
+            if (user && user.password === password) {
+                currentUser = { username, role: user.role };
+                welcomeMessage.textContent = `Selamat datang, ${currentUser.username}! (${currentUser.role})`;
+                adminPanel.classList.toggle('hidden', currentUser.role !== 'admin');
+                
+                renderBooks();
+                if (currentUser.role === 'admin') {
+                    renderApprovalList();
+                    renderUserList();
+                }
+
+                showPage('library-page');
+            } else {
+                loginErrorMessage.textContent = "Username atau password salah.";
+                loginErrorMessage.classList.remove('hidden');
+            }
+            toggleButtonLoading(loginBtn, false);
+        };
+
+        const handleRegister = async (e) => {
+            e.preventDefault();
+            toggleButtonLoading(registerBtn, true);
+
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value;
+
+            if (localUsers[username] || localPending.some(p => p.username === username)) {
+                showNotification("Pendaftaran Gagal", "Username sudah ada atau sedang menunggu persetujuan.", true);
+                toggleButtonLoading(registerBtn, false);
+                return;
+            }
+            
+            try {
+                const appId = getAppId();
+                await addDoc(collection(db, `artifacts/${appId}/public/data/pendingRegistrations`), { username, password });
+                showNotification("Pendaftaran Berhasil", "Akun Anda telah didaftarkan dan menunggu persetujuan dari admin.");
+                registerForm.reset();
+                showPage('login-page');
+            } catch (error) {
+                console.error("Error pendaftaran: ", error);
+                showNotification("Pendaftaran Gagal", "Terjadi kesalahan saat mendaftar. Silakan coba lagi.", true);
+            } finally {
+                toggleButtonLoading(registerBtn, false);
+            }
+        };
+
+        const handleLogout = () => {
+            currentUser = null;
+            loginForm.reset();
+            showPage('login-page');
+        };
+
+        const handleAddBook = async (e) => {
+            e.preventDefault();
+            toggleButtonLoading(addBookBtn, true);
+            
+            const title = document.getElementById('new-book-title').value;
+            const author = document.getElementById('new-book-author').value;
+            let cover = document.getElementById('new-book-cover-url').value;
+            const coverFile = document.getElementById('new-book-cover-file').files[0];
+
+            if (coverFile) {
+                try {
+                    cover = await fileToDataUrl(coverFile);
+                } catch (error) {
+                    console.error("Gagal membaca file gambar:", error);
+                    showNotification("Gagal", "Tidak dapat memproses file gambar.", true);
+                    toggleButtonLoading(addBookBtn, false);
+                    return;
+                }
+            }
+            
+            const newBook = { title, author, cover, borrowedBy: null, content: "" };
+            
+            try {
+                const appId = getAppId();
+                await addDoc(collection(db, `artifacts/${appId}/public/data/books`), newBook);
+                showNotification("Berhasil", "Buku baru berhasil ditambahkan.");
+                addBookForm.reset();
+            } catch (error) {
+                console.error("Error menambahkan buku: ", error);
+                showNotification("Gagal", "Gagal menambahkan buku.", true);
+            } finally {
+                toggleButtonLoading(addBookBtn, false);
+            }
+        };
+
+        const handleApproval = async (id, isApproved) => {
+            const pendingUser = localPending.find(p => p.id === id);
+            if (!pendingUser) return;
+            
+            const appId = getAppId();
+            const pendingDocRef = doc(db, `artifacts/${appId}/public/data/pendingRegistrations`, id);
+            
+            try {
+                if (isApproved) {
+                    const userDocRef = doc(db, `artifacts/${appId}/public/data/users`, pendingUser.username);
+                    await setDoc(userDocRef, { password: pendingUser.password, role: 'user' });
+                }
+                await deleteDoc(pendingDocRef);
+                showNotification("Berhasil", `Pendaftaran untuk ${pendingUser.username} telah di${isApproved ? 'setujui' : 'tolak'}.`);
+            } catch (error) {
+                console.error("Error memproses persetujuan: ", error);
+                showNotification("Gagal", "Terjadi kesalahan saat memproses permintaan.", true);
+            }
+        };
+        
+        const handleBookAction = async (e) => {
+            if (!currentUser) {
+                showNotification("Aksi Ditolak", "Anda harus login untuk melakukan aksi ini.", true);
+                return;
+            }
+            const target = e.target.closest('button');
+            if (!target) return;
+
+            const bookId = target.dataset.id;
+            const appId = getAppId();
+            const bookDocRef = doc(db, `artifacts/${appId}/public/data/books`, bookId);
+
+            if (target.classList.contains('borrow-btn')) {
+                await updateDoc(bookDocRef, { borrowedBy: currentUser.username });
+            } else if (target.classList.contains('return-btn')) {
+                await updateDoc(bookDocRef, { borrowedBy: null });
+            } else if (target.classList.contains('delete-btn')) {
+                const confirmed = await showConfirmation("Hapus Buku", `Apakah Anda yakin ingin menghapus buku ini?`);
+                if(confirmed) await deleteDoc(bookDocRef);
+            } else if (target.classList.contains('edit-btn')) {
+                const book = localBooks.find(b => b.id === bookId);
+                editBookIdInput.value = book.id;
+                editBookTitleInput.value = book.title;
+                editBookAuthorInput.value = book.author;
+                editBookContentInput.value = book.content || '';
+                editBookCoverUrlInput.value = ''; // Reset
+                editBookCoverFileInput.value = ''; // Reset
+                editBookModal.classList.remove('hidden');
+            } else if (target.classList.contains('read-btn')) {
+                const book = localBooks.find(b => b.id === bookId);
+                readBookTitle.textContent = book.title;
+                readBookContent.textContent = book.content || 'Konten untuk buku ini belum tersedia.';
+                readBookModal.classList.remove('hidden');
+            }
+        };
+        
+        const handleSaveEdit = async (e) => {
+            e.preventDefault();
+            toggleButtonLoading(saveEditBtn, true);
+
+            const bookId = editBookIdInput.value;
+            const title = editBookTitleInput.value;
+            const author = editBookAuthorInput.value;
+            let coverUrl = editBookCoverUrlInput.value;
+            const coverFile = editBookCoverFileInput.files[0];
+            const content = editBookContentInput.value;
+
+            const updates = { title, author, content };
+            
+            if (coverFile) {
+                try {
+                    updates.cover = await fileToDataUrl(coverFile);
+                } catch (error) {
+                     console.error("Gagal membaca file gambar:", error);
+                     showNotification("Gagal", "Tidak dapat memproses file gambar.", true);
+                     toggleButtonLoading(saveEditBtn, false);
+                     return;
+                }
+            } else if(coverUrl) {
+                updates.cover = coverUrl;
+            }
+
+            try {
+                const appId = getAppId();
+                const bookDocRef = doc(db, `artifacts/${appId}/public/data/books`, bookId);
+                await updateDoc(bookDocRef, updates);
+                editBookModal.classList.add('hidden');
+                showNotification("Berhasil", "Perubahan buku telah disimpan.");
+            } catch (error) {
+                console.error("Gagal menyimpan perubahan: ", error);
+                showNotification("Gagal", "Gagal menyimpan perubahan.", true);
+            } finally {
+                toggleButtonLoading(saveEditBtn, false);
+            }
+        };
+
+        const handleUserManagement = async (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
+            const userId = target.dataset.id;
+            const appId = getAppId();
+            const userDocRef = doc(db, `artifacts/${appId}/public/data/users`, userId);
+
+            if (target.classList.contains('toggle-role-btn')) {
+                const currentRole = target.dataset.role;
+                const newRole = currentRole === 'admin' ? 'user' : 'admin';
+                const confirmed = await showConfirmation("Ubah Peran", `Ubah peran ${userId} menjadi ${newRole}?`);
+                if(confirmed) await updateDoc(userDocRef, { role: newRole });
+
+            } else if (target.classList.contains('delete-user-btn')) {
+                const confirmed = await showConfirmation("Hapus Pengguna", `Hapus pengguna ${userId}? Ini akan menghapus akun mereka secara permanen.`);
+                if(confirmed) await deleteDoc(userDocRef);
+            }
+        };
+
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', initializeAppWithFirebase);
+        loginForm.addEventListener('submit', handleLogin);
+        registerForm.addEventListener('submit', handleRegister);
+        logoutBtn.addEventListener('click', handleLogout);
+        addBookForm.addEventListener('submit', handleAddBook);
+        showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); showPage('register-page'); });
+        showLoginLink.addEventListener('click', (e) => { e.preventDefault(); showPage('login-page'); });
+        bookList.addEventListener('click', handleBookAction);
+        
+        // Listeners Panel Admin
+        approvalList.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (button) {
+                const id = button.dataset.id;
+                if (button.classList.contains('approve-btn')) handleApproval(id, true);
+                if (button.classList.contains('reject-btn')) handleApproval(id, false);
+            }
+        });
+        
+        userList.addEventListener('click', handleUserManagement);
+
+        themeSelector.addEventListener('change', async (e) => {
+            const theme = e.target.value;
+            const appId = getAppId();
+            const themeDocRef = doc(db, `artifacts/${appId}/public/data/settings`, 'theme');
+            await setDoc(themeDocRef, { name: theme });
+        });
+
+        // Listeners Modal
+        editBookForm.addEventListener('submit', handleSaveEdit);
+        cancelEditBtn.addEventListener('click', () => editBookModal.classList.add('hidden'));
+        closeReadBtn.addEventListener('click', () => readBookModal.classList.add('hidden'));
+        notificationCloseBtn.addEventListener('click', () => notificationModal.classList.add('hidden'));
+        confirmCancelBtn.addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+            if (resolveConfirmation) resolveConfirmation(false);
+        });
+        confirmOkBtn.addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+            if (resolveConfirmation) resolveConfirmation(true);
+        });
+        
+    </script>
+</body>
+</html>
